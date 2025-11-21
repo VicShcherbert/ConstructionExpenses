@@ -37,6 +37,8 @@ export const Project = () => {
   const [totalExpenseAmount, setTotalExpenseAmount] = useState(0);
 
   console.log(expenseToUpdate);
+  console.log(project);
+  console.log(expenses);
 
   useEffect(() => {
     (async () => {
@@ -124,11 +126,7 @@ export const Project = () => {
   }, [receiptURL]);
 
   useEffect(() => {
-    if (expenses.length !== 0) {
-      // const sumOfExpenses = expenses.reduce(
-      //   (accumulator, currentValue) => accumulator + currentValue.expense_cost,
-      //   0
-      // );
+    if (expenses !== null && expenses.length !== 0) {
       setTotalExpenseAmount(
         expenses.reduce(
           (accumulator, currentValue) =>
@@ -277,7 +275,7 @@ export const Project = () => {
           <Box>
             {expenses !== null ? (
               <Box mt={'20px'}>
-                <Box bg='orange' color='white' p={'10px'}>
+                <Box bg='orange' color='white' p={'10px'} rounded={'md'}>
                   <Heading size={'md'}>
                     Total Expenses: ${totalExpenseAmount}
                   </Heading>
@@ -326,7 +324,7 @@ export const Project = () => {
                 </TableContainer>
               </Box>
             ) : (
-              <Box>No project expenses yet</Box>
+              <Box mt={'20px'}>No project expenses yet</Box>
             )}
           </Box>
         </Box>

@@ -10,6 +10,7 @@ import {
   Stack,
   Link,
   Collapse,
+  Spinner,
 } from '@chakra-ui/react';
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import React, { useEffect, useState } from 'react';
@@ -18,6 +19,7 @@ import { useFormik } from 'formik';
 export const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [openAddProject, setOpenAddProject] = useState(false);
+  const [loader, setLoader] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -45,6 +47,7 @@ export const Projects = () => {
       project_name: '',
     },
     onSubmit: (value) => {
+      setLoader(true);
       (async () => {
         await fetch('http://localhost:8080/create-project', {
           method: 'POST',
@@ -61,6 +64,7 @@ export const Projects = () => {
           })
           .then((data) => {
             console.log('Success:', data);
+            setLoader(false);
             window.location.reload();
           })
           .catch((error) => {
@@ -75,52 +79,62 @@ export const Projects = () => {
   };
 
   return (
-    <Box alignItems={'center'} justify={'center'}>
-      <Stack direction='row' display={'inline-flex'}>
-        <Button>
-          <Link href='/'>
-            <ArrowLeftIcon />
-          </Link>
-        </Button>
-        <Heading>Project Dashboard</Heading>
-      </Stack>
-      <Box mt={'20px'}>
-        <Button onClick={handleClick}>
-          {openAddProject ? <>Close</> : <>Add Project</>}
-        </Button>
-        <Collapse in={openAddProject}>
-          <Heading size='lg'>Create project</Heading>
-          <form onSubmit={formik.handleSubmit}>
-            <VStack>
-              <FormControl>
-                <FormLabel htmlFor='project_name'>Project Name</FormLabel>
-                <Input
-                  id='project_name'
-                  name='project_name'
-                  type='project_name'
-                  variant='filled'
-                  onChange={formik.handleChange}
-                  value={formik.values.project_name}
-                />
-              </FormControl>
-              <Button type='submit' colorScheme='white' width='full'>
-                Submit
+    <Box display={'flex'} alignItems={'center'} justifyContent={'center'}>
+      <Box>
+        <Stack direction='row' display={'inline-flex'}>
+          <Button>
+            <Link href='/'>
+              <ArrowLeftIcon />
+            </Link>
+          </Button>
+          <Heading>Project Dashboard</Heading>
+        </Stack>
+        <Box mt={'20px'}>
+          <Button onClick={handleClick}>
+            {openAddProject ? <>Close</> : <>Add Project</>}
+          </Button>
+          <Collapse in={openAddProject}>
+            {!loader ? (
+              <Box rounded={'md'} p={'20px'}>
+                {/* <Heading size='lg'>Create project</Heading> */}
+                <form onSubmit={formik.handleSubmit}>
+                  <VStack>
+                    {/* <Form> */}
+                      <FormControl>
+                        <FormLabel htmlFor='project_name'>
+                          Project Name
+                        </FormLabel>
+                        <Input
+                          id='project_name'
+                          name='project_name'
+                          type='project_name'
+                          variant='filled'
+                          onChange={formik.handleChange}
+                          value={formik.values.project_name}
+                        />
+                      </FormControl>
+                      <Button type='submit'>Submit</Button>
+                    {/* </Form> */}
+                  </VStack>
+                </form>
+              </Box>
+            ) : (
+              <Spinner />
+            )}
+          </Collapse>
+        </Box>
+        <Box mt={'20px'}>
+          {projects.map((project) => (
+            <Box key={project.project_id} mb={'13px'}>
+              <Button
+                width={'400px'}
+                onClick={() => openProjectPage(project.project_id)}
+              >
+                {project.project_name}
               </Button>
-            </VStack>
-          </form>
-        </Collapse>
-      </Box>
-      <Box mt={'20px'}>
-        {projects.map((project) => (
-          <Box key={project.project_id} mb={'13px'}>
-            <Button
-              width={'400px'}
-              onClick={() => openProjectPage(project.project_id)}
-            >
-              {project.project_name}
-            </Button>
-          </Box>
-        ))}
+            </Box>
+          ))}
+        </Box>
       </Box>
     </Box>
   );
