@@ -20,6 +20,8 @@ export const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [openAddProject, setOpenAddProject] = useState(false);
   const [loader, setLoader] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  console.log('Search query:', searchQuery);
 
   useEffect(() => {
     (async () => {
@@ -78,6 +80,10 @@ export const Projects = () => {
     setOpenAddProject(!openAddProject);
   };
 
+  const handleChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
   return (
     <Box display={'flex'} alignItems={'center'} justifyContent={'center'}>
       <Box>
@@ -123,8 +129,11 @@ export const Projects = () => {
             )}
           </Collapse>
         </Box>
+        <Box>
+          <Input value={searchQuery} onChange={handleChange} placeholder='Search for project'/>
+        </Box>
         <Box mt={'20px'}>
-          {projects.map((project) => (
+          {projects.filter(project => project.project_name.includes(searchQuery)).map((project) => (
             <Box key={project.project_id} mb={'13px'}>
               <Button
                 width={'400px'}

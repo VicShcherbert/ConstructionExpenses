@@ -35,10 +35,11 @@ export const Project = () => {
   const [loader, setLoader] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [totalExpenseAmount, setTotalExpenseAmount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  console.log(expenseToUpdate);
-  console.log(project);
-  console.log(expenses);
+  // console.log(expenseToUpdate);
+  // console.log(project);
+  // console.log(expenses);
 
   useEffect(() => {
     (async () => {
@@ -76,8 +77,6 @@ export const Project = () => {
   useEffect(() => {
     (async () => {
       if (expenseID !== 0 && receipt != null) {
-        // console.log(expenseID);
-
         const formData = new FormData();
         formData.append('file', receipt);
 
@@ -87,8 +86,6 @@ export const Project = () => {
           method: 'POST',
           body: formData,
         });
-        // const text = await res.text(); // read raw response
-        // console.log('Raw response:', text);
 
         const data = await res.json();
         console.log('Uploaded:', data);
@@ -151,6 +148,10 @@ export const Project = () => {
         console.log('Deleted expense:', data);
         window.location.reload();
       });
+  };
+
+  const handleChange = (event) => {
+    setSearchQuery(event.target.value);
   };
 
   return (
@@ -273,6 +274,14 @@ export const Project = () => {
             </Collapse>
           </Box>
           <Box>
+            <Input
+              value={searchQuery}
+              onChange={handleChange}
+              placeholder='Search for expenses'
+              mt={'20px'}
+            />
+          </Box>
+          <Box>
             {expenses !== null ? (
               <Box mt={'20px'}>
                 <Box bg='orange' color='white' p={'10px'} rounded={'md'}>
@@ -280,7 +289,7 @@ export const Project = () => {
                     Total Expenses: ${totalExpenseAmount}
                   </Heading>
                 </Box>
-                <Heading size='lg'>Expenses</Heading>
+                <Heading size='lg' mt={'20px'}>Expenses</Heading>
                 <TableContainer>
                   <Table variant='simple'>
                     <Thead>
@@ -292,7 +301,7 @@ export const Project = () => {
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {expenses.map((expense) => (
+                      {expenses.filter(expense => expense.expense_name.toLowerCase().includes(searchQuery.toLowerCase())).map((expense) => (
                         <Tr key={expense.expense_id}>
                           <Td>{expense.expense_name}</Td>
                           <Td>{expense.expense_cost}</Td>
