@@ -130,7 +130,7 @@ export const Projects = () => {
           </Collapse>
         </Box>
         <Box>
-          <Input value={searchQuery} onChange={handleChange} placeholder='Search for project'/>
+          <Input value={searchQuery} onChange={handleChange} mt={'20px'} placeholder='Search for project'/>
         </Box>
         <Box mt={'20px'}>
           {projects.filter(project => project.project_name.includes(searchQuery)).map((project) => (
