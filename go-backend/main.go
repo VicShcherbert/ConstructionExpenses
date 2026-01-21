@@ -32,6 +32,7 @@ func main() {
 	r.PUT("/update-project/:project_id", updateProject)
 	r.PUT("/update-expense/:expense_id", updateExpense)
 	r.POST("/upload-receipt/:expense_id", uploadReceipt)
+	r.POST("/api/auth/google", GoogleLogin)
 
 	log.Println("Server running on http://localhost:8080")
 	r.Run(":8080")

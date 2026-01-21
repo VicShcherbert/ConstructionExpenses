@@ -3,12 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/idtoken"
 )
 
 type Project struct {
@@ -23,6 +29,8 @@ type Expense struct {
 	ExpenseReceiptURL string `db:"expense_receipt_url" json:"expense_receipt_url"`
 	ProjectID         int64  `db:"project_id" json:"project_id"`
 }
+
+var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 func getProjects(c *gin.Context) {
 	var project []Project
@@ -249,5 +257,83 @@ func uploadReceipt(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Upload successful",
 		"url":     fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, key),
+	})
+
+}
+
+func createJWT(userEmail string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"email": userEmail,
+		"exp":   time.Now().Add(time.Hour * 24).Unix(), // 1 day expiration
+	})
+	return token.SignedString(jwtSecret)
+}
+
+func GoogleLogin(c *gin.Context) {
+	var googleOauthConfig = &oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  "http://localhost:3000",
+		// RedirectURL:  "http://localhost:8080/auth/google/callback",
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+			"openid",
+		},
+		Endpoint: google.Endpoint,
+	}
+
+	log.Println("RedirectURL:", googleOauthConfig.RedirectURL)
+
+	var req struct {
+		Code string `json:"code"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Println("failed to bind JSON:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	token, err := googleOauthConfig.Exchange(
+		context.Background(),
+		req.Code,
+	)
+	if err != nil {
+		log.Println("failed to exchange token:", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token exchange failed"})
+		return
+	}
+
+	idToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		log.Println("failed to get id_token:", idToken)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id_token"})
+		return
+	}
+
+	payload, err := idtoken.Validate(
+		context.Background(),
+		idToken,
+		googleOauthConfig.ClientID,
+	)
+	if err != nil {
+		log.Println("id_token validation failed:", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid id token"})
+		return
+	}
+
+	email := payload.Claims["email"].(string)
+	name := payload.Claims["name"].(string)
+
+	// TODO: create/find user, issue JWT
+
+	fmt.Println("Email: ", email)
+	fmt.Println("Name: ", name)
+
+	c.JSON(http.StatusOK, gin.H{
+		"email": email,
+		"name":  name,
+		"token": jwtToken,
 	})
 }

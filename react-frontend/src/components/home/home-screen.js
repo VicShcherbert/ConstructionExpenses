@@ -15,11 +15,13 @@ export const HomeScreen = () => {
   const login = useGoogleLogin({
   flow: 'auth-code',
   onSuccess: async (codeResponse) => {
-    await fetch('/api/auth/google', {
+    const res = await fetch('http://localhost:8080/api/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: codeResponse.code }),
     });
+    const data = await res.json();
+    console.log('Login Success:', data);
   },
 });
 
