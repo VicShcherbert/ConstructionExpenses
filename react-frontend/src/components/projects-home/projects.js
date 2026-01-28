@@ -16,7 +16,8 @@ import { ArrowLeftIcon } from '@chakra-ui/icons';
 import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 
-export const Projects = () => {
+export const Projects = ({ email, setEmail, name, setName, jwt, setJwt }) => {
+  console.log(jwt);
   const [projects, setProjects] = useState([]);
   const [openAddProject, setOpenAddProject] = useState(false);
   const [loader, setLoader] = useState(false);
@@ -86,26 +87,27 @@ export const Projects = () => {
 
   return (
     <Box display={'flex'} alignItems={'center'} justifyContent={'center'}>
-      <Box>
-        <Stack direction='row' display={'inline-flex'}>
-          <Button>
-            <Link href='/'>
-              <ArrowLeftIcon />
-            </Link>
-          </Button>
-          <Heading>Project Dashboard</Heading>
-        </Stack>
-        <Box mt={'20px'}>
-          <Button onClick={handleClick}>
-            {openAddProject ? <>Close</> : <>Add Project</>}
-          </Button>
-          <Collapse in={openAddProject}>
-            {!loader ? (
-              <Box rounded={'md'} p={'20px'}>
-                {/* <Heading size='lg'>Create project</Heading> */}
-                <form onSubmit={formik.handleSubmit}>
-                  <VStack>
-                    {/* <Form> */}
+      {jwt !== null ? (
+        <Box>
+          <Stack direction='row' display={'inline-flex'}>
+            <Button>
+              <Link href='/'>
+                <ArrowLeftIcon />
+              </Link>
+            </Button>
+            <Heading>Project Dashboard</Heading>
+          </Stack>
+          <Box mt={'20px'}>
+            <Button onClick={handleClick}>
+              {openAddProject ? <>Close</> : <>Add Project</>}
+            </Button>
+            <Collapse in={openAddProject}>
+              {!loader ? (
+                <Box rounded={'md'} p={'20px'}>
+                  {/* <Heading size='lg'>Create project</Heading> */}
+                  <form onSubmit={formik.handleSubmit}>
+                    <VStack>
+                      {/* <Form> */}
                       <FormControl>
                         <FormLabel htmlFor='project_name'>
                           Project Name
@@ -120,31 +122,41 @@ export const Projects = () => {
                         />
                       </FormControl>
                       <Button type='submit'>Submit</Button>
-                    {/* </Form> */}
-                  </VStack>
-                </form>
-              </Box>
-            ) : (
-              <Spinner />
-            )}
-          </Collapse>
+                      {/* </Form> */}
+                    </VStack>
+                  </form>
+                </Box>
+              ) : (
+                <Spinner />
+              )}
+            </Collapse>
+          </Box>
+          <Box>
+            <Input
+              value={searchQuery}
+              onChange={handleChange}
+              mt={'20px'}
+              placeholder='Search for project'
+            />
+          </Box>
+          <Box mt={'20px'}>
+            {projects
+              .filter((project) => project.project_name.includes(searchQuery))
+              .map((project) => (
+                <Box key={project.project_id} mb={'13px'}>
+                  <Button
+                    width={'400px'}
+                    onClick={() => openProjectPage(project.project_id)}
+                  >
+                    {project.project_name}
+                  </Button>
+                </Box>
+              ))}
+          </Box>
         </Box>
-        <Box>
-          <Input value={searchQuery} onChange={handleChange} mt={'20px'} placeholder='Search for project'/>
-        </Box>
-        <Box mt={'20px'}>
-          {projects.filter(project => project.project_name.includes(searchQuery)).map((project) => (
-            <Box key={project.project_id} mb={'13px'}>
-              <Button
-                width={'400px'}
-                onClick={() => openProjectPage(project.project_id)}
-              >
-                {project.project_name}
-              </Button>
-            </Box>
-          ))}
-        </Box>
-      </Box>
+      ) : (
+        <Box>Please login to view your projects.</Box>
+      )}
     </Box>
   );
 };

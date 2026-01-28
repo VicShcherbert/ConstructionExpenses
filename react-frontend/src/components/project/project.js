@@ -24,6 +24,7 @@ import { ArrowLeftIcon } from '@chakra-ui/icons';
 import { Form, Formik } from 'formik';
 
 export const Project = () => {
+  
   const params = useParams();
   const [project, setProject] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -128,8 +129,8 @@ export const Project = () => {
         expenses.reduce(
           (accumulator, currentValue) =>
             accumulator + currentValue.expense_cost,
-          0
-        )
+          0,
+        ),
       );
     }
   }, [expenses]);
@@ -193,7 +194,7 @@ export const Project = () => {
                           .then((response) => {
                             if (!response.ok) {
                               throw new Error(
-                                `Response status: ${response.status}`
+                                `Response status: ${response.status}`,
                               );
                             }
                             return response.json();
@@ -240,7 +241,7 @@ export const Project = () => {
                                   'expense_cost',
                                   e.target.value === ''
                                     ? ''
-                                    : Number(e.target.value)
+                                    : Number(e.target.value),
                                 );
                               }}
                               value={values.expense_cost}
@@ -289,7 +290,9 @@ export const Project = () => {
                     Total Expenses: ${totalExpenseAmount}
                   </Heading>
                 </Box>
-                <Heading size='lg' mt={'20px'}>Expenses</Heading>
+                <Heading size='lg' mt={'20px'}>
+                  Expenses
+                </Heading>
                 <TableContainer>
                   <Table variant='simple'>
                     <Thead>
@@ -301,33 +304,39 @@ export const Project = () => {
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {expenses.filter(expense => expense.expense_name.toLowerCase().includes(searchQuery.toLowerCase())).map((expense) => (
-                        <Tr key={expense.expense_id}>
-                          <Td>{expense.expense_name}</Td>
-                          <Td>{expense.expense_cost}</Td>
-                          <Td>
-                            {expense.expense_receipt_url !== '' ? (
-                              <Button>
-                                <a
-                                  href={`${expense.expense_receipt_url}`}
-                                  target='_blank'
-                                  rel='noreferrer'
-                                >
-                                  View Receipt
-                                </a>
+                      {expenses
+                        .filter((expense) =>
+                          expense.expense_name
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase()),
+                        )
+                        .map((expense) => (
+                          <Tr key={expense.expense_id}>
+                            <Td>{expense.expense_name}</Td>
+                            <Td>{expense.expense_cost}</Td>
+                            <Td>
+                              {expense.expense_receipt_url !== '' ? (
+                                <Button>
+                                  <a
+                                    href={`${expense.expense_receipt_url}`}
+                                    target='_blank'
+                                    rel='noreferrer'
+                                  >
+                                    View Receipt
+                                  </a>
+                                </Button>
+                              ) : null}
+                            </Td>
+                            <Td>
+                              <Button
+                                colorScheme='red'
+                                onClick={() => handleDelete(expense.expense_id)}
+                              >
+                                Delete
                               </Button>
-                            ) : null}
-                          </Td>
-                          <Td>
-                            <Button
-                              colorScheme='red'
-                              onClick={() => handleDelete(expense.expense_id)}
-                            >
-                              Delete
-                            </Button>
-                          </Td>
-                        </Tr>
-                      ))}
+                            </Td>
+                          </Tr>
+                        ))}
                     </Tbody>
                   </Table>
                 </TableContainer>
