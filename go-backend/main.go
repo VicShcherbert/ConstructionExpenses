@@ -14,7 +14,13 @@ func main() {
 	defer db.Close()
 
 	r := gin.Default()
-	r.Use(cors.Default())
+	// r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowCredentials: true,
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"Content-Type"},
+	}))
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -33,6 +39,7 @@ func main() {
 	r.PUT("/update-expense/:expense_id", updateExpense)
 	r.POST("/upload-receipt/:expense_id", uploadReceipt)
 	r.POST("/api/auth/google", GoogleLogin)
+	r.GET("/user-info", AuthMiddleware(), UserInfo)
 
 	log.Println("Server running on http://localhost:8080")
 	r.Run(":8080")

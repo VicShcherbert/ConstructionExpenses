@@ -261,9 +261,10 @@ func uploadReceipt(c *gin.Context) {
 
 }
 
-func createJWT(userEmail string) (string, error) {
+func createJWT(userEmail string, userName string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": userEmail,
+		"name":  userName,
 		"exp":   time.Now().Add(time.Hour * 24).Unix(), // 1 day expiration
 	})
 	return token.SignedString(jwtSecret)
@@ -283,7 +284,7 @@ func GoogleLogin(c *gin.Context) {
 		Endpoint: google.Endpoint,
 	}
 
-	log.Println("RedirectURL:", googleOauthConfig.RedirectURL)
+	// log.Println("RedirectURL:", googleOauthConfig.RedirectURL)
 
 	var req struct {
 		Code string `json:"code"`
@@ -311,12 +312,14 @@ func GoogleLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id_token"})
 		return
 	}
+	// fmt.Println("idToken: ", idToken)
 
 	payload, err := idtoken.Validate(
 		context.Background(),
 		idToken,
 		googleOauthConfig.ClientID,
 	)
+	// fmt.Println("Payload: ", payload)
 	if err != nil {
 		log.Println("id_token validation failed:", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid id token"})
@@ -325,15 +328,71 @@ func GoogleLogin(c *gin.Context) {
 
 	email := payload.Claims["email"].(string)
 	name := payload.Claims["name"].(string)
-
-	// TODO: create/find user, issue JWT
-
 	fmt.Println("Email: ", email)
 	fmt.Println("Name: ", name)
 
-	c.JSON(http.StatusOK, gin.H{
-		"email": email,
-		"name":  name,
-		"token": jwtToken,
+	jwtToken, err := createJWT(email, name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create JWT"})
+		return
+	}
+
+	// c.JSON(http.StatusOK, gin.H{"token": jwtToken, "email": email, "name": name})
+	// c.SetCookie("auth_token", jwtToken, 86400, "/", "localhost", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "auth_token",
+		Value:    jwtToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // true in prod
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   86400,
 	})
+
+	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+}
+
+// Middleware to check JWT
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString, err := c.Cookie("auth_token")
+		fmt.Println("Auth Token: ", tokenString)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing auth cookie"})
+			return
+		}
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method")
+			}
+			return jwtSecret, nil
+		})
+		if err != nil || !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			return
+		}
+
+		fmt.Println("Claims: ", claims)
+		if email, ok := claims["email"].(string); ok {
+			c.Set("email", email)
+		}
+		if name, ok := claims["name"].(string); ok {
+			c.Set("name", name)
+		}
+		c.Next()
+	}
+}
+
+// Protected route example
+func UserInfo(c *gin.Context) {
+	email := c.GetString("email")
+	name := c.GetString("name")
+	c.JSON(http.StatusOK, gin.H{"message": "Hello " + email + ", your name is " + name})
 }
