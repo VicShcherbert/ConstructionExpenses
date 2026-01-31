@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, Link } from '@chakra-ui/react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
 
-export const HomeScreen = ({ email, setEmail, name, setName, jwt, setJwt }) => {
+export const HomeScreen = ({ email, setEmail, name, setName }) => {
+  const navigate = useNavigate();
+
   const login = useGoogleLogin({
     flow: 'auth-code',
     onSuccess: async (codeResponse) => {
@@ -13,33 +16,41 @@ export const HomeScreen = ({ email, setEmail, name, setName, jwt, setJwt }) => {
         body: JSON.stringify({ code: codeResponse.code }),
       });
       const data = await res.json();
-      // console.log(data); Returns a success message
+      if (!res.ok) {
+        console.error('Login failed:', data);
+        return;
+      }
+      const user = await fetch('http://localhost:8080/user-info', {
+        credentials: 'include',
+      });
+      if (user.ok) {
+        const data = await user.json();
+        console.log('Fetched user info:', data);
+        setEmail(data.email ?? '');
+        setName(data.name ?? '');
+      } else {
+        console.error('Failed to fetch user-info');
+        console.log(user);
+      }
+
+      navigate('/projects');
     },
   });
 
-  const callProtected = async () => {
-    const user = await fetch(
-      'http://localhost:8080/user-info',
-      // {
-      //   headers: { Authorization: `Bearer ${jwt}` },
-      // },
-      { credentials: 'include' },
-    );
-    if (user.ok) {
-      const data = await user.json();
-      console.log('Protected data:', data);
-      setEmail(data.email ?? '');
-      setName(data.name ?? '');
+  const logout = async () => {
+    const res = await fetch('http://localhost:8080/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ yo: 'hey' }),
+    });
+    if (res.ok) {
+      setEmail('');
+      setName('');
+      console.log('Logout successful');
     } else {
-      console.error('Failed to fetch protected data');
-      console.log(user);
+      console.error('Logout failed');
     }
-  };
-
-  const logout = () => {
-    setJwt(null);
-    setEmail('');
-    setName('');
   };
 
   return (
@@ -50,16 +61,26 @@ export const HomeScreen = ({ email, setEmail, name, setName, jwt, setJwt }) => {
         The Leading Expense Management Tool
       </Box>
       <Box></Box>
-      <Box>Ready to get started? Login!</Box>
       {/* <Box>
-        <Button>
-          <Link href='/projects'>Login</Link>
-        </Button>
+        
         </Box> */}
       <div>
-        <p>Logged in as: {name}</p>
-        <Button onClick={() => login()}>Login with Google</Button>
-        <button onClick={callProtected}>Call protected route</button>
+        {email && name ? (
+          <div>
+            <p>Logged in as: {name}</p>
+            <p>Email: {email}</p>
+            <Button onClick={() => logout()}>Logout</Button>
+            <Button>
+              <Link href='/projects'>Your Projects</Link>
+            </Button>
+          </div>
+        ) : (
+          <div>
+            <Button onClick={() => login()}>Login with Google</Button>
+          </div>
+        )}
+
+        {/* <button onClick={callProtected}>Call protected route</button> */}
         {/* <button onClick={logout}>Logout</button> */}
       </div>
     </Box>

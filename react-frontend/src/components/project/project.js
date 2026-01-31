@@ -23,7 +23,7 @@ import {
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import { Form, Formik } from 'formik';
 
-export const Project = () => {
+export const Project = ({email, name}) => {
   
   const params = useParams();
   const [project, setProject] = useState([]);

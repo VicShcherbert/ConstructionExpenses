@@ -40,6 +40,7 @@ func main() {
 	r.POST("/upload-receipt/:expense_id", uploadReceipt)
 	r.POST("/api/auth/google", GoogleLogin)
 	r.GET("/user-info", AuthMiddleware(), UserInfo)
+	r.POST("/logout", Logout)
 
 	log.Println("Server running on http://localhost:8080")
 	r.Run(":8080")

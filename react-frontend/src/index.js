@@ -9,12 +9,38 @@ import { Project } from './components/project/project';
 import { Box, Button, ChakraProvider } from '@chakra-ui/react';
 import { SiteHeader } from './components/home/site-header';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { RequireAuth } from './components/other/require-auth';
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
 export const App = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [jwt, setJwt] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setAuthLoading(true);
+      try {
+        // On app load, check if user is already authenticated
+        const res = await fetch('http://localhost:8080/user-info', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEmail(data.email);
+          setName(data.name);
+          // console.log('User is already authenticated:', data);
+        } else {
+          setName('');
+          setEmail('');
+          console.log('User is not authenticated');
+        }
+      } finally {
+        setAuthLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <ChakraProvider>
@@ -30,8 +56,6 @@ export const App = () => {
                   setEmail={setEmail}
                   name={name}
                   setName={setName}
-                  jwt={jwt}
-                  setJwt={setJwt}
                 />
               }
             />
@@ -43,37 +67,33 @@ export const App = () => {
                   setEmail={setEmail}
                   name={name}
                   setName={setName}
-                  jwt={jwt}
-                  setJwt={setJwt}
                 />
               }
             />
             <Route
-              path='/projects'
               element={
-                <Projects
-                  email={email}
-                  setEmail={setEmail}
-                  name={name}
-                  setName={setName}
-                  jwt={jwt}
-                  setJwt={setJwt}
-                />
+                <RequireAuth isAuthed={!!email} authLoading={authLoading} />
               }
-            />
-            <Route
-              path='/projects/:project_id'
-              element={
-                <Project
-                  email={email}
-                  setEmail={setEmail}
-                  name={name}
-                  setName={setName}
-                  jwt={jwt}
-                  setJwt={setJwt}
-                />
-              }
-            />
+            >
+              <Route
+                path='/projects'
+                element={
+                  <Projects
+                    email={email}
+                    name={name}
+                  />
+                }
+              />
+              <Route
+                path='/projects/:project_id'
+                element={
+                  <Project
+                    email={email}
+                    name={name}
+                  />
+                }
+              />
+            </Route>
           </Routes>
         </Box>
       </Router>

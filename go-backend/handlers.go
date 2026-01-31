@@ -394,5 +394,19 @@ func AuthMiddleware() gin.HandlerFunc {
 func UserInfo(c *gin.Context) {
 	email := c.GetString("email")
 	name := c.GetString("name")
-	c.JSON(http.StatusOK, gin.H{"message": "Hello " + email + ", your name is " + name})
+	c.JSON(http.StatusOK, gin.H{"message": "Hello " + email + ", your name is " + name, "email": email, "name": name})
+}
+
+func Logout(c *gin.Context) {
+	// Clear the auth_token cookie
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "auth_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // true in prod
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
 }
