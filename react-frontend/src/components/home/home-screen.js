@@ -3,7 +3,7 @@ import { Box, Button, Link } from '@chakra-ui/react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 
-export const HomeScreen = ({ email, setEmail, name, setName }) => {
+export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }) => {
   const navigate = useNavigate();
 
   const login = useGoogleLogin({
@@ -16,10 +16,12 @@ export const HomeScreen = ({ email, setEmail, name, setName }) => {
         body: JSON.stringify({ code: codeResponse.code }),
       });
       const data = await res.json();
+      // console.log('Login response:', data.user_id);
       if (!res.ok) {
         console.error('Login failed:', data);
         return;
       }
+      // setUserId(data.user_id);
       const user = await fetch('http://localhost:8080/user-info', {
         credentials: 'include',
       });
@@ -28,6 +30,7 @@ export const HomeScreen = ({ email, setEmail, name, setName }) => {
         console.log('Fetched user info:', data);
         setEmail(data.email ?? '');
         setName(data.name ?? '');
+        setUserId(data.userId ?? null);
       } else {
         console.error('Failed to fetch user-info');
         console.log(user);
@@ -47,6 +50,7 @@ export const HomeScreen = ({ email, setEmail, name, setName }) => {
     if (res.ok) {
       setEmail('');
       setName('');
+      setUserId(null);
       console.log('Logout successful');
     } else {
       console.error('Logout failed');

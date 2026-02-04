@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -28,6 +27,12 @@ type Expense struct {
 	ExpenseCost       int    `db:"expense_cost" json:"expense_cost"`
 	ExpenseReceiptURL string `db:"expense_receipt_url" json:"expense_receipt_url"`
 	ProjectID         int64  `db:"project_id" json:"project_id"`
+}
+
+type User struct {
+	ID          int       `db:"id" json:"id"`
+	Email       string    `db:"email" json:"email"`
+	DateCreated time.Time `db:"date_created" json:"date_created"`
 }
 
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
@@ -258,14 +263,39 @@ func uploadReceipt(c *gin.Context) {
 		"message": "Upload successful",
 		"url":     fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, key),
 	})
-
 }
 
-func createJWT(userEmail string, userName string) (string, error) {
+func handleUser(c *gin.Context, userEmail string) (int, error) {
+	var userId int
+	// var user User
+	// user.Email = userEmail
+	// if err := c.ShouldBindJSON(&user); err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return 0, err
+	// }
+	fmt.Println("Handling user: ", userEmail)
+	err := db.Get(&userId, "SELECT id FROM user_info WHERE email=$1", userEmail)
+	if err != nil {
+		fmt.Println("User not found, creating new user: ", userEmail)
+		query := `INSERT INTO user_info (email) VALUES ($1) RETURNING id;`
+		queryErr := db.QueryRow(query, userEmail).Scan(&userId)
+		if queryErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": queryErr.Error()})
+			return 0, queryErr
+		}
+		fmt.Println("User created: ", userId)
+		return userId, nil
+	}
+	fmt.Println("User found: ", userId)
+	return userId, nil
+}
+
+func createJWT(userEmail string, userName string, userId int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": userEmail,
-		"name":  userName,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(), // 1 day expiration
+		"email":  userEmail,
+		"name":   userName,
+		"userId": userId,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(), // 1 day expiration
 	})
 	return token.SignedString(jwtSecret)
 }
@@ -291,8 +321,8 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Println("failed to bind JSON:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		// log.Println("failed to bind JSON:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to bind JSON: " + err.Error()})
 		return
 	}
 
@@ -301,15 +331,15 @@ func GoogleLogin(c *gin.Context) {
 		req.Code,
 	)
 	if err != nil {
-		log.Println("failed to exchange token:", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token exchange failed"})
+		// log.Println("failed to exchange token:", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token exchange failed: " + err.Error()})
 		return
 	}
 
 	idToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		log.Println("failed to get id_token:", idToken)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id_token"})
+		// log.Println("failed to get id_token:", idToken)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id_token: " + err.Error()})
 		return
 	}
 	// fmt.Println("idToken: ", idToken)
@@ -321,24 +351,29 @@ func GoogleLogin(c *gin.Context) {
 	)
 	// fmt.Println("Payload: ", payload)
 	if err != nil {
-		log.Println("id_token validation failed:", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid id token"})
+		// log.Println("id_token validation failed:", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid id token: " + err.Error()})
 		return
 	}
 
 	email := payload.Claims["email"].(string)
+	//check in DB if user exists, if not create user record
+	userId, handleUserErr := handleUser(c, email)
+	fmt.Printf("User ID: %d\n", userId)
+	if handleUserErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": handleUserErr.Error()})
+		return
+	}
 	name := payload.Claims["name"].(string)
 	fmt.Println("Email: ", email)
 	fmt.Println("Name: ", name)
 
-	jwtToken, err := createJWT(email, name)
+	jwtToken, err := createJWT(email, name, userId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create JWT"})
 		return
 	}
 
-	// c.JSON(http.StatusOK, gin.H{"token": jwtToken, "email": email, "name": name})
-	// c.SetCookie("auth_token", jwtToken, 86400, "/", "localhost", false, true)
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "auth_token",
 		Value:    jwtToken,
@@ -349,7 +384,7 @@ func GoogleLogin(c *gin.Context) {
 		MaxAge:   86400,
 	})
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "user_id": userId})
 }
 
 // Middleware to check JWT
@@ -381,10 +416,17 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		fmt.Println("Claims: ", claims)
 		if email, ok := claims["email"].(string); ok {
+			fmt.Println("Setting email in context:", email)
 			c.Set("email", email)
 		}
 		if name, ok := claims["name"].(string); ok {
+			fmt.Println("Setting name in context:", name)
 			c.Set("name", name)
+		}
+		if uI, ok := claims["userId"].(float64); ok {
+			fmt.Println("Setting userId in context:", uI)
+			userId := int(uI)
+			c.Set("userId", userId)
 		}
 		c.Next()
 	}
@@ -394,7 +436,9 @@ func AuthMiddleware() gin.HandlerFunc {
 func UserInfo(c *gin.Context) {
 	email := c.GetString("email")
 	name := c.GetString("name")
-	c.JSON(http.StatusOK, gin.H{"message": "Hello " + email + ", your name is " + name, "email": email, "name": name})
+	userId := c.GetInt("userId")
+	fmt.Println("UserInfo - Email:", email, "Name:", name, "UserID:", userId)
+	c.JSON(http.StatusOK, gin.H{"message": "Hello " + email + ", your name is " + name, "email": email, "name": name, "user_id": userId})
 }
 
 func Logout(c *gin.Context) {

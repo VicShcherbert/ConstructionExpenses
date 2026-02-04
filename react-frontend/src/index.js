@@ -15,6 +15,7 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 export const App = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [userId, setUserId] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
@@ -30,10 +31,12 @@ export const App = () => {
           const data = await res.json();
           setEmail(data.email);
           setName(data.name);
+          setUserId(data.userId);
           // console.log('User is already authenticated:', data);
         } else {
           setName('');
           setEmail('');
+          setUserId(null);
           console.log('User is not authenticated');
         }
       } finally {
@@ -56,6 +59,8 @@ export const App = () => {
                   setEmail={setEmail}
                   name={name}
                   setName={setName}
+                  userId={userId}
+                  setUserId={setUserId}
                 />
               }
             />
@@ -67,6 +72,8 @@ export const App = () => {
                   setEmail={setEmail}
                   name={name}
                   setName={setName}
+                  userId={userId}
+                  setUserId={setUserId}
                 />
               }
             />
