@@ -17,6 +17,7 @@ import (
 )
 
 type Project struct {
+	UserID      int    `db:"user_id" json:"user_id"`
 	ProjectID   int64  `db:"project_id" json:"project_id"`
 	ProjectName string `db:"project_name" json:"project_name"`
 }
@@ -38,13 +39,21 @@ type User struct {
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 func getProjects(c *gin.Context) {
-	var project []Project
-	err := db.Select(&project, "SELECT * FROM projects")
+	var projects []Project
+	userId := c.Param("user_id")
+	fmt.Println("Getting projects for user ID with String type: ", userId)
+	numUserId, err := strconv.Atoi(userId)
+	fmt.Println("Getting projects for user ID with Int type: ", numUserId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not convert string to int" + err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, project)
+	err = db.Select(&projects, "SELECT * FROM projects WHERE user_id = $1", numUserId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not access database: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, projects)
 }
 
 func getProject(c *gin.Context) {
@@ -102,8 +111,8 @@ func addProject(c *gin.Context) {
 	}
 
 	project.ProjectID = time.Now().Unix()
-	query := `INSERT INTO projects (project_id, project_name) VALUES ($1, $2) RETURNING project_id`
-	err := db.QueryRow(query, project.ProjectID, project.ProjectName).Scan(&project.ProjectID)
+	query := `INSERT INTO projects (project_id, project_name, user_id) VALUES ($1, $2, $3) RETURNING project_id`
+	err := db.QueryRow(query, project.ProjectID, project.ProjectName, project.UserID).Scan(&project.ProjectID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

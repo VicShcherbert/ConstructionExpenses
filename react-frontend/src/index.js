@@ -18,6 +18,10 @@ export const App = () => {
   const [userId, setUserId] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
 
+  console.log('userId in Home: ' + userId);
+  console.log('name in Home: ' + name);
+  console.log('email in Home: ' + email);
+
   useEffect(() => {
     (async () => {
       setAuthLoading(true);
@@ -31,7 +35,7 @@ export const App = () => {
           const data = await res.json();
           setEmail(data.email);
           setName(data.name);
-          setUserId(data.userId);
+          setUserId(data.user_id);
           // console.log('User is already authenticated:', data);
         } else {
           setName('');
@@ -88,6 +92,7 @@ export const App = () => {
                   <Projects
                     email={email}
                     name={name}
+                    userId={userId}
                   />
                 }
               />
@@ -97,6 +102,7 @@ export const App = () => {
                   <Project
                     email={email}
                     name={name}
+                    userId={userId}
                   />
                 }
               />

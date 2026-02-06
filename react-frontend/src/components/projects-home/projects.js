@@ -17,7 +17,8 @@ import { ArrowLeftIcon } from '@chakra-ui/icons';
 import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 
-export const Projects = ({ email, name }) => {
+export const Projects = ({ email, name, userId }) => {
+  console.log('User ID in Projects component:', userId);
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [openAddProject, setOpenAddProject] = useState(false);
@@ -26,19 +27,19 @@ export const Projects = ({ email, name }) => {
 
   useEffect(() => {
     (async () => {
-      const url = 'http://localhost:8080/get-projects';
+      const url = 'http://localhost:8080/get-projects/' + userId;
       try {
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`Response status: ${response.status}`);
         }
         const result = await response.json();
-        setProjects(result);
+        setProjects(result ?? []);
       } catch (error) {
         console.error(error.message);
       }
     })();
-  }, []);
+  }, [userId]);
 
   const openProjectPage = (project_id) => {
     const url = '/projects/' + project_id;
@@ -62,7 +63,7 @@ export const Projects = ({ email, name }) => {
         })
           .then((response) => {
             if (!response.ok) {
-              throw new Error(`Response status: ${response.status}`);
+              throw new Error(`Response status: ${response.status}` + ' ' + `${response.statusText}`);
             }
             return response.json();
           })

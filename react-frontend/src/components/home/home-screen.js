@@ -27,10 +27,10 @@ export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }
       });
       if (user.ok) {
         const data = await user.json();
-        console.log('Fetched user info:', data);
+        // console.log('Fetched user info:', data);
         setEmail(data.email ?? '');
         setName(data.name ?? '');
-        setUserId(data.userId ?? null);
+        setUserId(data.user_id ?? null);
       } else {
         console.error('Failed to fetch user-info');
         console.log(user);
@@ -73,6 +73,7 @@ export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }
           <div>
             <p>Logged in as: {name}</p>
             <p>Email: {email}</p>
+            <p>UserId: {userId}</p>
             <Button onClick={() => logout()}>Logout</Button>
             <Button>
               <Link href='/projects'>Your Projects</Link>

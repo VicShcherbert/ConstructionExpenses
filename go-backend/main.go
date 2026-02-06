@@ -27,7 +27,7 @@ func main() {
 		})
 	})
 
-	r.GET("/get-projects", getProjects)
+	r.GET("/get-projects/:user_id", getProjects)
 	r.GET("/get-project/:project_id", getProject)
 	r.POST("/create-project", addProject)
 	r.POST("/create-expense", addExpenseToProject)

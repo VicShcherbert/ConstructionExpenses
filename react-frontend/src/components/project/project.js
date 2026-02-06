@@ -63,7 +63,7 @@ export const Project = ({email, name}) => {
       try {
         const response = await fetch(expensesURL);
         if (!response.ok) {
-          throw new Error(`Response status: ${response.status}`);
+          throw new Error(`Response status: ${response}`);
         }
 
         const result = await response.json();
