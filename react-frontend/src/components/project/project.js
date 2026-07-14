@@ -23,8 +23,7 @@ import {
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import { Form, Formik } from 'formik';
 
-export const Project = ({email, name}) => {
-  
+export const Project = ({ email, name }) => {
   const params = useParams();
   const [project, setProject] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -92,7 +91,7 @@ export const Project = ({email, name}) => {
         console.log('Uploaded:', data);
         setReceiptURL(data.url);
       } else if (expenseID !== 0 && receipt == null) {
-        window.location.reload();
+        // window.location.reload();
         setLoader(false);
       }
     })();
@@ -116,7 +115,11 @@ export const Project = ({email, name}) => {
           .then((data) => {
             console.log('Updated expense:', data);
             setLoader(false);
-            window.location.reload();
+            fetch(
+              `http://localhost:8080/get-project-expenses/${params.project_id}`,
+            )
+              .then((res) => res.json())
+              .then((data) => setExpenses(data));
           });
         return;
       }

@@ -27,13 +27,14 @@ type Expense struct {
 	ExpenseName       string `db:"expense_name" json:"expense_name"`
 	ExpenseCost       int    `db:"expense_cost" json:"expense_cost"`
 	ExpenseReceiptURL string `db:"expense_receipt_url" json:"expense_receipt_url"`
-	ProjectID         int64  `db:"project_id" json:"project_id"`
+	ProjectID         int    `db:"project_id" json:"project_id"`
 }
 
 type User struct {
-	ID          int       `db:"id" json:"id"`
-	Email       string    `db:"email" json:"email"`
-	DateCreated time.Time `db:"date_created" json:"date_created"`
+	UserID int    `db:"user_id" json:"user_id"`
+	Email  string `db:"email" json:"email"`
+	Name   string `db:"name" json:"name"`
+	// DateCreated time.Time `db:"date_created" json:"date_created"`
 }
 
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
@@ -104,15 +105,22 @@ func getProjectExpenses(c *gin.Context) {
 }
 
 func addProject(c *gin.Context) {
+	fmt.Println(c.Request)
+	fmt.Println(c)
 	var project Project
 	if err := c.ShouldBindJSON(&project); err != nil {
+		fmt.Println("ERROR: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	project.ProjectID = time.Now().Unix()
+	fmt.Println("PROJECT_NAME: ", project.ProjectName)
+	fmt.Println("USER_ID: ", project.UserID)
+
 	query := `INSERT INTO projects (project_id, project_name, user_id) VALUES ($1, $2, $3) RETURNING project_id`
 	err := db.QueryRow(query, project.ProjectID, project.ProjectName, project.UserID).Scan(&project.ProjectID)
+	fmt.Println("ERROR: ", err)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -274,22 +282,32 @@ func uploadReceipt(c *gin.Context) {
 	})
 }
 
-func handleUser(c *gin.Context, userEmail string) (int, error) {
-	var userId int
+func handleUser(c *gin.Context, userEmail string, name string) (int64, error) {
+	var userId int64
 	// var user User
 	// user.Email = userEmail
 	// if err := c.ShouldBindJSON(&user); err != nil {
 	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	// 	return 0, err
 	// }
+
+	var dbName string
+	_ = db.QueryRow("SELECT current_database()").Scan(&dbName)
+
+	fmt.Println("Connected database:", dbName)
+
 	fmt.Println("Handling user: ", userEmail)
-	err := db.Get(&userId, "SELECT id FROM user_info WHERE email=$1", userEmail)
+	err := db.Get(&userId, "SELECT id FROM users WHERE email=$1", userEmail)
 	if err != nil {
 		fmt.Println("User not found, creating new user: ", userEmail)
-		query := `INSERT INTO user_info (email) VALUES ($1) RETURNING id;`
-		queryErr := db.QueryRow(query, userEmail).Scan(&userId)
+		userId = time.Now().Unix()
+		fmt.Println("Handling user: ", userEmail)
+		query := `INSERT INTO users(user_id, email, name) VALUES($1,$2,$3) RETURNING user_id;`
+		queryErr := db.QueryRow(query, userId, userEmail, name).Scan(&userId)
+		fmt.Println("ERROR: ", queryErr)
 		if queryErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": queryErr.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": queryErr})
+			// c.JSON(http.StatusInternalServerError, gin.H{"error": queryErr.Error()})
 			return 0, queryErr
 		}
 		fmt.Println("User created: ", userId)
@@ -299,7 +317,7 @@ func handleUser(c *gin.Context, userEmail string) (int, error) {
 	return userId, nil
 }
 
-func createJWT(userEmail string, userName string, userId int) (string, error) {
+func createJWT(userEmail string, userName string, userId int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email":  userEmail,
 		"name":   userName,
@@ -366,14 +384,14 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	email := payload.Claims["email"].(string)
+	name := payload.Claims["name"].(string)
 	//check in DB if user exists, if not create user record
-	userId, handleUserErr := handleUser(c, email)
+	userId, handleUserErr := handleUser(c, email, name)
 	fmt.Printf("User ID: %d\n", userId)
 	if handleUserErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": handleUserErr.Error()})
 		return
 	}
-	name := payload.Claims["name"].(string)
 	fmt.Println("Email: ", email)
 	fmt.Println("Name: ", name)
 

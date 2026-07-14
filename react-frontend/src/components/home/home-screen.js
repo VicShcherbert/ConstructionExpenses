@@ -17,6 +17,8 @@ export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }
       });
       const data = await res.json();
       // console.log('Login response:', data.user_id);
+      console.log(data);
+      
       if (!res.ok) {
         console.error('Login failed:', data);
         return;

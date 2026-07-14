@@ -15,7 +15,7 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 export const App = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [userId, setUserId] = useState(null);
+  const [userId, setUserId] = useState(0);
   const [authLoading, setAuthLoading] = useState(false);
 
   console.log('userId in Home: ' + userId);

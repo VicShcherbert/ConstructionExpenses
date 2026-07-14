@@ -43,7 +43,7 @@ export const Projects = ({ email, name, userId }) => {
 
   const openProjectPage = (project_id) => {
     const url = '/projects/' + project_id;
-    navigate(url)
+    navigate(url);
     // window.open(url, '_self');
   };
 
@@ -51,31 +51,31 @@ export const Projects = ({ email, name, userId }) => {
     initialValues: {
       project_name: '',
     },
-    onSubmit: (value) => {
+    onSubmit: async (value) => {
       setLoader(true);
-      (async () => {
-        await fetch('http://localhost:8080/create-project', {
+
+      try {
+        const response = await fetch('http://localhost:8080/create-project', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(value),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`Response status: ${response.status}` + ' ' + `${response.statusText}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log('Success:', data);
-            setLoader(false);
-            window.location.reload();
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-          });
-      })();
+          body: JSON.stringify({
+            project_name: value.project_name,
+            user_id: userId,
+          }),
+        });
+
+        const data = await response.json();
+
+        console.log('Success:', data);
+
+        setLoader(false);
+        window.location.reload();
+      } catch (error) {
+        console.error('Error:', error);
+        setLoader(false);
+      }
     },
   });
 
@@ -152,11 +152,6 @@ export const Projects = ({ email, name, userId }) => {
               </Box>
             ))}
         </Box>
-      </Box>
-      <Box>
-        {/* <Stack direction='row' display={'inline-flex'}> */}
-          {name} - {email}
-        {/* </Stack> */}
       </Box>
       {/* ) : (
         <Box>Please login to view your projects.</Box>
