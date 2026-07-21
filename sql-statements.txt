@@ -1,0 +1,61 @@
+DB instance identifyer: construction-expenses-updated
+Master username: construction
+port: 5432
+dbname=ContructionExpenses 
+user=construction
+RDS_HOST: construction-expenses-updated.cr8q6se0qrbt.us-east-2.rds.amazonaws.com
+Pass: HenryJosie1
+
+
+
+
+-- CREATE TABLE user_info (
+-- 	id BIGSERIAL PRIMARY KEY,
+-- 	email TEXT NOT NULL,
+-- 	date_created TIMESTAMPTZ DEFAULT now()
+-- );
+
+SELECT * from projects
+
+
+-- DROP TABLE user_info
+
+-- INSERT INTO user_info (email) VALUES ('victorstudios28@gmail.com')
+
+-- INSERT INTO user_info (email)
+-- VALUES ('victorstudios28@gmail.com');
+
+-- ALTER TABLE user_info
+-- ADD CONSTRAINT user_info_email_unique UNIQUE (email);
+
+-- DROP TABLE projects CASCADE
+
+-- CREATE TABLE projects (
+-- 	project_id BIGSERIAL PRIMARY KEY,
+-- 	project_name VARCHAR(255) NOT NULL,
+-- 	user_id BIGING NOT
+-- )
+
+
+CREATE TABLE users(
+	user_id INTEGER NOT NULL PRIMARY KEY,
+	email TEXT NOT NULL,
+	name TEXT NOT NULL,
+);
+
+CREATE TABLE projects(
+	project_id BIGINT NOT NULL PRIMARY KEY, 
+	project_name TEXT NOT NULL,
+	CONSTRAINT fk_projects_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE expenses(
+	expense_id BIGINT PRIMARY KEY,
+	expense_name TEXT,
+	expense_cost INT,
+	expense_receipt_url TEXT,
+	project_id INT REFERENCES projects(project_id)
+);

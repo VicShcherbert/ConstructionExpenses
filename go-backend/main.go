@@ -18,7 +18,7 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowCredentials: true,
-		AllowMethods:     []string{"GET", "POST", "PUT"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Content-Type"},
 	}))
 	r.GET("/ping", func(c *gin.Context) {

@@ -23,7 +23,7 @@ import {
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import { Form, Formik } from 'formik';
 
-export const Project = ({ email, name }) => {
+export const Project = () => {
   const params = useParams();
   const [project, setProject] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -37,62 +37,67 @@ export const Project = ({ email, name }) => {
   const [totalExpenseAmount, setTotalExpenseAmount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // console.log(expenseToUpdate);
-  // console.log(project);
-  // console.log(expenses);
-
-  useEffect(() => {
-    (async () => {
-      const projectURL =
-        'http://localhost:8080/get-project/' + params.project_id;
-      try {
-        const response = await fetch(projectURL);
-        if (!response.ok) {
-          throw new Error(`Response status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        setProject(result);
-      } catch (error) {
-        console.error(error.message);
-      }
-
+  const fetchExpenses = async () => {
+    try {
+      setExpensesLoaded(false);
       const expensesURL =
         'http://localhost:8080/get-project-expenses/' + params.project_id;
-      try {
-        const response = await fetch(expensesURL);
-        if (!response.ok) {
-          throw new Error(`Response status: ${response}`);
-        }
-
-        const result = await response.json();
-        setExpenses(result);
-      } catch (error) {
-        console.error(error.message);
+      const response = await fetch(expensesURL);
+      if (!response.ok) {
+        throw new Error(`Response status: ${response}`);
       }
+      const result = await response.json();
+      setExpenses(result);
       setExpensesLoaded(true);
-    })();
-  }, []);
+    } catch (error) {
+      console.error(error.message);
+    }
+  };
+
+  const fetchProductExpenses = async () => {
+    try {
+      const projectURL =
+        'http://localhost:8080/get-project/' + params.project_id;
+      const response = await fetch(projectURL);
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+      const result = await response.json();
+      setProject(result);
+    } catch (error) {
+      console.error(error.message);
+    }
+    await fetchExpenses();
+  };
 
   useEffect(() => {
     (async () => {
-      if (expenseID !== 0 && receipt != null) {
-        const formData = new FormData();
-        formData.append('file', receipt);
+      await fetchProductExpenses();
+    })();
+  }, [loader]);
 
-        const expenseUploadURL =
-          'http://localhost:8080/upload-receipt/' + expenseID;
-        const res = await fetch(expenseUploadURL, {
-          method: 'POST',
-          body: formData,
-        });
+  useEffect(() => {
+    (async () => {
+      try {
+        if (expenseID !== 0 && receipt != null) {
+          setLoader(true);
+          const formData = new FormData();
+          formData.append('file', receipt);
 
-        const data = await res.json();
-        console.log('Uploaded:', data);
-        setReceiptURL(data.url);
-      } else if (expenseID !== 0 && receipt == null) {
-        // window.location.reload();
-        setLoader(false);
+          const expenseUploadURL =
+            'http://localhost:8080/upload-receipt/' + expenseID;
+          const res = await fetch(expenseUploadURL, {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await res.json();
+          setReceiptURL(data.url);
+        } else if (expenseID !== 0 && receipt == null) {
+          setLoader(false);
+        }
+      } catch (error) {
+        console.error(error.message);
       }
     })();
   }, [expenseID]);
@@ -100,28 +105,23 @@ export const Project = ({ email, name }) => {
   useEffect(() => {
     (async () => {
       if (receiptURL !== '' && expenseID !== 0 && expenses !== null) {
-        await fetch(`http://localhost:8080/update-expense/${expenseID}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            expense_id: expenseToUpdate.expense_id,
-            expense_name: expenseToUpdate.expense_name,
-            expense_receipt_url: receiptURL,
-            expense_cost: expenseToUpdate.expense_cost,
-            project_id: expenseToUpdate.project_id,
-          }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log('Updated expense:', data);
-            setLoader(false);
-            fetch(
-              `http://localhost:8080/get-project-expenses/${params.project_id}`,
-            )
-              .then((res) => res.json())
-              .then((data) => setExpenses(data));
-          });
-        return;
+        setLoader(true);
+        const updateInfo = await fetch(
+          `http://localhost:8080/update-expense/${expenseID}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              expense_id: expenseToUpdate.expense_id,
+              expense_name: expenseToUpdate.expense_name,
+              expense_receipt_url: receiptURL,
+              expense_cost: expenseToUpdate.expense_cost,
+              project_id: expenseToUpdate.project_id,
+            }),
+          },
+        );
+        setLoader(false);
+        await fetchExpenses();
       }
     })();
   }, [receiptURL]);
@@ -143,15 +143,13 @@ export const Project = ({ email, name }) => {
   };
 
   const handleDelete = async (expenseID) => {
-    console.log(expenseID);
+    setLoader(true);
     await fetch(`http://localhost:8080/delete-expense/${expenseID}`, {
       method: 'DELETE',
     })
       .then((res) => res.json())
-      .then((data) => {
-        console.log('Deleted expense:', data);
-        window.location.reload();
-      });
+      .then((data) => {});
+    setLoader(false);
   };
 
   const handleChange = (event) => {
@@ -207,7 +205,7 @@ export const Project = ({ email, name }) => {
                             setExpenseToUpdate(data);
                           })
                           .catch((error) => {
-                            console.error('Error:', error);
+                            console.error('Error: ', error);
                           });
                       })();
                     }}

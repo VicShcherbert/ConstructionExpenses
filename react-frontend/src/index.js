@@ -16,7 +16,7 @@ export const App = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [userId, setUserId] = useState(0);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   console.log('userId in Home: ' + userId);
   console.log('name in Home: ' + name);
@@ -24,7 +24,7 @@ export const App = () => {
 
   useEffect(() => {
     (async () => {
-      setAuthLoading(true);
+      // setAuthLoading(true);
       try {
         // On app load, check if user is already authenticated
         const res = await fetch('http://localhost:8080/user-info', {

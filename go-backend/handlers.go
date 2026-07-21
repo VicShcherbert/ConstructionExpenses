@@ -297,7 +297,7 @@ func handleUser(c *gin.Context, userEmail string, name string) (int64, error) {
 	fmt.Println("Connected database:", dbName)
 
 	fmt.Println("Handling user: ", userEmail)
-	err := db.Get(&userId, "SELECT id FROM users WHERE email=$1", userEmail)
+	err := db.Get(&userId, "SELECT user_id FROM users WHERE email=$1", userEmail)
 	if err != nil {
 		fmt.Println("User not found, creating new user: ", userEmail)
 		userId = time.Now().Unix()
