@@ -284,19 +284,12 @@ func uploadReceipt(c *gin.Context) {
 
 func handleUser(c *gin.Context, userEmail string, name string) (int64, error) {
 	var userId int64
-	// var user User
-	// user.Email = userEmail
-	// if err := c.ShouldBindJSON(&user); err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 	return 0, err
-	// }
+	// var dbName string
+	// _ = db.QueryRow("SELECT current_database()").Scan(&dbName)
 
-	var dbName string
-	_ = db.QueryRow("SELECT current_database()").Scan(&dbName)
+	// fmt.Println("Connected database:", dbName)
 
-	fmt.Println("Connected database:", dbName)
-
-	fmt.Println("Handling user: ", userEmail)
+	// fmt.Println("Handling user: ", userEmail)
 	err := db.Get(&userId, "SELECT user_id FROM users WHERE email=$1", userEmail)
 	if err != nil {
 		fmt.Println("User not found, creating new user: ", userEmail)
@@ -307,7 +300,6 @@ func handleUser(c *gin.Context, userEmail string, name string) (int64, error) {
 		fmt.Println("ERROR: ", queryErr)
 		if queryErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": queryErr})
-			// c.JSON(http.StatusInternalServerError, gin.H{"error": queryErr.Error()})
 			return 0, queryErr
 		}
 		fmt.Println("User created: ", userId)

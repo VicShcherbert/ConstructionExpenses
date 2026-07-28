@@ -3,7 +3,14 @@ import { Box, Button, Link } from '@chakra-ui/react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 
-export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }) => {
+export const HomeScreen = ({
+  email,
+  setEmail,
+  name,
+  setName,
+  userId,
+  setUserId,
+}) => {
   const navigate = useNavigate();
 
   const login = useGoogleLogin({
@@ -16,20 +23,15 @@ export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }
         body: JSON.stringify({ code: codeResponse.code }),
       });
       const data = await res.json();
-      // console.log('Login response:', data.user_id);
-      console.log(data);
-      
       if (!res.ok) {
         console.error('Login failed:', data);
         return;
       }
-      // setUserId(data.user_id);
       const user = await fetch('http://localhost:8080/user-info', {
         credentials: 'include',
       });
       if (user.ok) {
         const data = await user.json();
-        // console.log('Fetched user info:', data);
         setEmail(data.email ?? '');
         setName(data.name ?? '');
         setUserId(data.user_id ?? null);
@@ -67,9 +69,6 @@ export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }
         The Leading Expense Management Tool
       </Box>
       <Box></Box>
-      {/* <Box>
-        
-        </Box> */}
       <div>
         {email && name ? (
           <div>
@@ -86,9 +85,6 @@ export const HomeScreen = ({ email, setEmail, name, setName, userId, setUserId }
             <Button onClick={() => login()}>Login with Google</Button>
           </div>
         )}
-
-        {/* <button onClick={callProtected}>Call protected route</button> */}
-        {/* <button onClick={logout}>Logout</button> */}
       </div>
     </Box>
   );

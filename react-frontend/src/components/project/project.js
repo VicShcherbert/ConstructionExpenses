@@ -22,6 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import { Form, Formik } from 'formik';
+import { fetchExpenses, fetchProjectInfo } from '../../api/api';
 
 export const Project = () => {
   const params = useParams();
@@ -37,42 +38,20 @@ export const Project = () => {
   const [totalExpenseAmount, setTotalExpenseAmount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchExpenses = async () => {
-    try {
-      setExpensesLoaded(false);
-      const expensesURL =
-        'http://localhost:8080/get-project-expenses/' + params.project_id;
-      const response = await fetch(expensesURL);
-      if (!response.ok) {
-        throw new Error(`Response status: ${response}`);
-      }
-      const result = await response.json();
-      setExpenses(result);
-      setExpensesLoaded(true);
-    } catch (error) {
-      console.error(error.message);
-    }
-  };
-
-  const fetchProductExpenses = async () => {
-    try {
-      const projectURL =
-        'http://localhost:8080/get-project/' + params.project_id;
-      const response = await fetch(projectURL);
-      if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
-      }
-      const result = await response.json();
-      setProject(result);
-    } catch (error) {
-      console.error(error.message);
-    }
-    await fetchExpenses();
-  };
-
   useEffect(() => {
     (async () => {
-      await fetchProductExpenses();
+      try {
+        setExpensesLoaded(false);
+        
+        const project = await fetchProjectInfo(params.project_id);
+        setProject(project);
+        const projectExpenses = await fetchExpenses(params.project_id)
+        setExpenses(projectExpenses)
+
+        setExpensesLoaded(true);
+      } catch (error) {
+        console.error(error.message);
+      }
     })();
   }, [loader]);
 

@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@chakra-ui/icons';
 import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
+import { fetchProjects } from '../../api/api';
 
 export const Projects = ({ email, name, userId }) => {
   console.log('User ID in Projects component:', userId);
@@ -27,14 +28,9 @@ export const Projects = ({ email, name, userId }) => {
 
   useEffect(() => {
     (async () => {
-      const url = 'http://localhost:8080/get-projects/' + userId;
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Response status: ${response.status}`);
-        }
-        const result = await response.json();
-        setProjects(result ?? []);
+        const projects = await fetchProjects(userId);
+        setProjects(projects);
       } catch (error) {
         console.error(error.message);
       }
